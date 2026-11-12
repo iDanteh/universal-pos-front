@@ -1,0 +1,119 @@
+/* ============================================================
+   POS Platform Admin — Design tokens (single source of truth)
+   DIRECTION: DESIGN(1).md "Apple style reference" — the page as
+   a white gallery: enormous calm surfaces, compact semibold sans
+   typography, monochrome product storytelling with ONE precise
+   blue reserved for conversion controls and inline links.
+   Surfaces flat and shadowless; separation comes from white vs
+   mist, 28px media corners and sparse hairlines.
+   Extender consentido: liquid glass MUY ligero (nav frosted blur),
+   sin color añadido y sin gradientes.
+   ============================================================ */
+:root {
+  /* ---- Core palette (Apple gallery) ---- */
+  --color-gallery-white: #ffffff;      /* canvas blanco de galería */
+  --color-paper-white: #ffffff;        /* alias legacy del canvas */
+  --color-studio-mist: #f5f5f7;        /* bandas de sección / cards calladas */
+  --color-mist-gray: #f5f5f7;          /* alias: quiet cards / fills */
+  --color-paper-frost: #fafafc;        /* navegación abierta / hover */
+  --color-fog-white: #fafafc;          /* alias: alternate sections */
+  --color-hairline-silver: #d6d6d6;    /* divisores 1px */
+  --color-outline: #e6e6e8;            /* hairline de controles */
+  --color-control-gray: #e6e6e8;      /* utilería deshabilitada / borde nav */
+  --color-ink: #1d1d1f;                /* titulares y cuerpo primario */
+  --color-ink-black: #1d1d1f;          /* alias del texto primario */
+  --color-slate: #707070;              /* copia secundaria, legal */
+  --color-slate-gray: #707070;         /* alias: helper text */
+  --color-steel: #86868b;              /* outlines de inputs, inactivo */
+  --color-ash-gray: #86868b;           /* alias: tags tipográficos */
+  --color-smoke: #b0b0b5;              /* placeholders, disabled */
+  --color-smoke-gray: #b0b0b5;         /* alias */
+  --color-apple-blue: #0066cc;         /* inline links, links de sección */
+  --color-pricing-blue: #0071e3;       /* UNICAMENTE píldoras de conversión */
+  --color-launch-orange: #b64400;      /* etiquetas de estatus "nuevo" (texto desnudo) */
+
+  /* ---- Semantics (functional exception; Apple-muted) ---- */
+  --color-success: #248a3d;
+  --color-success-bg: #eaf6ed;
+  --color-danger: #d02e26;
+  --color-danger-bg: #fdeeec;
+  --color-danger-border: #f6d7d4;
+  --color-warning: #b64400;
+  --color-warning-bg: #fdf1e8;
+
+  /* ---- Typography ----
+     SF Pro no es distribable: Geist (self-hosted) es el sustituto
+     del documento (Inter/Helvetica/Arial) con la misma geometría
+     compacta; tracking negativo consistente en tamaños de interfaz. */
+  --font-apple-display: "Geist Variable", "SF Pro Display", "Inter", ui-sans-serif,
+    system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-apple-text: "Geist Variable", "SF Pro Text", "Inter", ui-sans-serif,
+    system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sohne: var(--font-apple-text);   /* alias legacy del shell */
+  --font-mono: "Geist Mono Variable", ui-monospace, "Cascadia Mono",
+    Consolas, monospace;
+
+  --text-caption: 0.75rem;      /* 12px operational / global nav */
+  --text-small: 0.875rem;       /* 14px body-small */
+  --text-body: 1.0625rem;       /* 17px Apple body */
+  --text-body-lg: 1.3125rem;    /* 21px feature/kicker level */
+  --text-subheading: 1.5rem;    /* 24px product-nav statements */
+  --text-heading-statement: 1.75rem; /* 28px chapter statements */
+  --text-heading: 2.5rem;       /* 40px feature heading */
+  --text-display: 3rem;         /* 48px hero de admin (escala hero Apple condensada) */
+
+  --tracking-display: -1.2px;
+  --tracking-heading: -0.7px;
+  --tracking-body: -0.374px;
+  --tracking-small: -0.224px;
+  --tracking-caption: -0.12px;
+
+  /* ---- Spacing (4px base; escala Apple) ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;             /* element gap Apple */
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 64px;
+  --space-card: 28px;          /* card padding Apple */
+  --section-gap: 90px;         /* storytelling sections */
+
+  /* ---- Shape ---- */
+  --radius-cards: 28px;        /* shadowless feature cards */
+  --radius-elevated: 20px;     /* navigation surfaces */
+  --radius-smallcards: 16px;
+  --radius-inputs: 980px;      /* Apple: inputs en cápsula fluida */
+  --radius-pill: 9999px;       /* buttons/controls */
+  --radius-compact: 10px;      /* links */
+
+  /* ---- Elevation — flat: hairlines y outline, NO sombras ---- */
+  --shadow-hairline: #d6d6d6 0 0 0 1px;
+  --shadow-subtle: var(--shadow-hairline);
+  --shadow-steel-outline: #86868b 0 0 0 1px;
+  --shadow-popover: 0 0 0 1px rgba(230, 230, 232, 0.9);
+  --shadow-modal: 0 0 0 1px rgba(214, 214, 214, 0.8);
+
+  /* ---- Glass (liquid glass, VERY LIGHT extender) ----
+     El estilo Apple ya usa frosted blur en su navegación abierta
+     (#fafafc + blur(20px) + edge #e6e6e8). El vidrio aquí solo
+     translucidez + blur + hairline: cero color, cero gradientes,
+     cero drop shadows. */
+  --glass-bg: rgba(250, 250, 252, 0.72);
+  --glass-bg-strong: rgba(250, 250, 252, 0.86);
+  --glass-blur: blur(20px) saturate(180%);
+  --glass-border: 1px solid rgba(214, 214, 214, 0.85);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  --glass-shadow: none;
+
+  /* ---- Motion ---- */
+  --ease-out: cubic-bezier(0.25, 0.1, 0.25, 1);   /* Apple-style ease */
+  --transition-fast: 180ms var(--ease-out);
+
+  /* ---- Layout ---- */
+  --page-max-width: 1200px;
+  --sidebar-width: 252px;
+  --topbar-height: 64px;
+}
