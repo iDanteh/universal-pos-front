@@ -78,6 +78,18 @@ export interface InvoiceLineView {
   readonly unitPrice: string;
   readonly discount: string;
   readonly lineTotal: string;
+  readonly taxRateCode: string | null;
+  readonly taxTotal: string;
+  readonly iepsRateCode: string | null;
+  readonly iepsTotal: string;
+}
+
+/** One document-level federal retention (v0.11 · ADR-021). */
+export interface WithholdingView {
+  readonly code: string;
+  readonly scheme: string;
+  readonly rate: string;
+  readonly amount: string;
 }
 
 export interface InvoiceView {
@@ -85,11 +97,11 @@ export interface InvoiceView {
   readonly serie: string;
   readonly folio: number;
   readonly folioLabel: string;
-  readonly kind: "INDIVIDUAL" | "GLOBAL" | "CREDIT_NOTE";
+  readonly kind: "INDIVIDUAL" | "GLOBAL" | "CREDIT_NOTE" | "PAYMENT";
   readonly saleId: string | null;
   /** CREDIT_NOTE (v0.9 · ADR-019): the return the note reverses. */
   readonly returnId: string | null;
-  /** CREDIT_NOTE: the related income CFDI (TipoRelacion 01). */
+  /** CREDIT_NOTE: the related income CFDI. PAYMENT (v0.11 · ADR-021): the settled CFDI. */
   readonly relatedInvoiceId: string | null;
   readonly periodYear: number | null;
   readonly periodMonth: number | null;
@@ -110,6 +122,14 @@ export interface InvoiceView {
   readonly cancelMotive: string | null;
   readonly cancelNote: string | null;
   readonly createdAt: string;
+  readonly withholdings: readonly WithholdingView[];
+  readonly withholdingTotal: string;
+  /** PAYMENT (v0.11 · ADR-021): the settled amount / SAT forma de pago. */
+  readonly paymentAmount: string | null;
+  readonly paymentMethod: string | null;
+  readonly paymentDate: string | null;
+  /** Outstanding balance of an income CFDI (total minus stamped payments). */
+  readonly outstanding: string | null;
   readonly lines: readonly InvoiceLineView[];
 }
 
@@ -132,6 +152,8 @@ export function issueInvoice(params: {
   readonly saleId: string;
   readonly legalEntityId?: string | undefined;
   readonly receptor: ReceptorCommand;
+  /** Federal retenciones (v0.11 · ADR-021), e.g. ["RETISR125", "RETIVA23"]. */
+  readonly withholdings?: readonly string[] | undefined;
 }): Promise<InvoiceView> {
   return apiJson<InvoiceView>("/api/v1/invoices", {
     method: "POST",
@@ -140,6 +162,9 @@ export function issueInvoice(params: {
       saleId: params.saleId,
       ...(params.legalEntityId !== undefined ? { legalEntityId: params.legalEntityId } : {}),
       receptor: params.receptor,
+      ...(params.withholdings !== undefined && params.withholdings.length > 0
+        ? { withholdings: params.withholdings }
+        : {}),
     }),
   });
 }
@@ -184,5 +209,27 @@ export function issueCreditNote(params: { readonly returnId: string }): Promise<
     method: "POST",
     headers: tenantHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ returnId: params.returnId }),
+  });
+}
+
+/**
+ * Issue the PAYMENT complement (CFDI tipo P) of ONE STAMPED income CFDI
+ * (v0.11 · ADR-021). The balance is the guard: an amount above it answers
+ * 409 PAG_OVER_BALANCE.
+ */
+export function issuePaymentComplement(params: {
+  readonly invoiceId: string;
+  readonly amount: string;
+  readonly method: string;
+  readonly paymentDate?: string | undefined;
+}): Promise<InvoiceView> {
+  return apiJson<InvoiceView>(`/api/v1/invoices/${params.invoiceId}/payments`, {
+    method: "POST",
+    headers: tenantHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({
+      amount: params.amount,
+      method: params.method,
+      ...(params.paymentDate !== undefined ? { paymentDate: params.paymentDate } : {}),
+    }),
   });
 }

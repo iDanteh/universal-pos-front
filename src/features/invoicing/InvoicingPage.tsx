@@ -9,6 +9,7 @@ import {
   cancelInvoice,
   issueGlobalInvoice,
   issueInvoice,
+  issuePaymentComplement,
   listCatalog,
   listEmisores,
   listInvoices,
@@ -17,6 +18,7 @@ import {
   type EmisorView,
   type InvoiceView,
 } from "@/api/invoicing";
+import { catalogWithholdings, type WithholdingRateView } from "@/api/catalog";
 
 /** Display-only money formatting of backend NUMERIC strings (never floats). */
 function money(value: string): string {
@@ -69,6 +71,12 @@ export function InvoicingPage() {
   const motivosRes = useApiResource<readonly CatalogItem[]>(() =>
     listCatalog("MOTIVO_CANCELACION"),
   );
+  const formasPagoRes = useApiResource<readonly CatalogItem[]>(() =>
+    listCatalog("FORMA_PAGO"),
+  );
+  const retencionesRes = useApiResource<readonly WithholdingRateView[]>(
+    catalogWithholdings,
+  );
 
   const firstRun = useRef(true);
 
@@ -93,7 +101,9 @@ export function InvoicingPage() {
     salesRes.reload();
   };
 
-  const catalogError = regimesRes.error ?? usosRes.error ?? motivosRes.error ?? null;
+  const catalogError =
+    regimesRes.error ?? usosRes.error ?? motivosRes.error ?? formasPagoRes.error
+    ?? retencionesRes.error ?? null;
 
   // Completed sales WITHOUT an active invoice (issueable candidates).
   const uninvoiced = (salesRes.data ?? []).filter(
@@ -112,11 +122,11 @@ export function InvoicingPage() {
       <div className="page-header">
         <h1 id="invoicing-title">Facturación</h1>
         <p>
-          CFDI 4.0 sobre ventas completadas (PAC simulado de esta fase):
-          completa la cara fiscal del emisor, factura ventas con datos del
-          receptor, emite la factura global del mes y cancela con motivo SAT.
-          El CFDI es un snapshot de la venta: jamás factura un monto distinto
-          al pagado.
+          CFDI 4.0 sobre ventas completadas (PAC simulado): completa la cara
+          fiscal del emisor, factura ventas con datos del receptor (con
+          retenciones federales opcionales), emite la factura global del mes,
+          registra complementos de pago y cancela con motivo SAT. El CFDI es un
+          snapshot de la venta: jamás factura un monto distinto al pagado.
         </p>
       </div>
 
@@ -127,6 +137,8 @@ export function InvoicingPage() {
             regimesRes.reload();
             usosRes.reload();
             motivosRes.reload();
+            formasPagoRes.reload();
+            retencionesRes.reload();
           }}
         />
       ) : emisoresRes.error !== null ? (
@@ -196,6 +208,7 @@ export function InvoicingPage() {
                   legalEntityId={emisorFactura?.id}
                   regimes={regimesRes.data ?? []}
                   usos={usosRes.data ?? []}
+                  retenciones={retencionesRes.data ?? []}
                   onDone={refresh}
                 />
               ))}
@@ -230,6 +243,7 @@ export function InvoicingPage() {
                       ? motivosRes.data
                       : CANCEL_MOTIVES
                   }
+                  formasPago={formasPagoRes.data ?? []}
                   onDone={refresh}
                 />
               ))}
@@ -393,12 +407,14 @@ function IssueCard({
   legalEntityId,
   regimes,
   usos,
+  retenciones,
   onDone,
 }: {
   sale: SaleView;
   legalEntityId: string | undefined;
   regimes: readonly CatalogItem[];
   usos: readonly CatalogItem[];
+  retenciones: readonly WithholdingRateView[];
   onDone: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -422,7 +438,7 @@ function IssueCard({
         </button>
       </div>
       {open ? (
-        <ReceptorForm saleId={sale.id} total={sale.total} legalEntityId={legalEntityId} regimes={regimes} usos={usos} onDone={onDone} />
+        <ReceptorForm saleId={sale.id} total={sale.total} legalEntityId={legalEntityId} regimes={regimes} usos={usos} retenciones={retenciones} onDone={onDone} />
       ) : null}
     </div>
   );
@@ -434,6 +450,7 @@ function ReceptorForm({
   legalEntityId,
   regimes,
   usos,
+  retenciones,
   onDone,
 }: {
   saleId: string;
@@ -441,6 +458,7 @@ function ReceptorForm({
   legalEntityId: string | undefined;
   regimes: readonly CatalogItem[];
   usos: readonly CatalogItem[];
+  retenciones: readonly WithholdingRateView[];
   onDone: () => void;
 }) {
   const [rfc, setRfc] = useState("");
@@ -448,6 +466,8 @@ function ReceptorForm({
   const [regime, setRegime] = useState("601");
   const [uso, setUso] = useState("G01");
   const [zip, setZip] = useState("");
+  /** Federal retenciones (v0.11 · ADR-021): multi-select of catalog codes. */
+  const [retencionCodes, setRetencionCodes] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -462,6 +482,7 @@ function ReceptorForm({
         saleId,
         ...(legalEntityId !== undefined ? { legalEntityId } : {}),
         receptor: { rfc: rfc.trim().toUpperCase(), name: name.trim(), regime, use: uso, zip: zip.trim() },
+        ...(retencionCodes.length > 0 ? { withholdings: retencionCodes } : {}),
       });
       setSuccess(
         `CFDI ${invoice.folioLabel} TIMBRADO (PAC simulado · folio fiscal ${invoice.fiscalId?.slice(0, 8) ?? "?"}…).`,
@@ -550,6 +571,35 @@ function ReceptorForm({
             required
           />
         </div>
+        {retenciones.length > 0 ? (
+          <div className="field">
+            <label className="field__label" htmlFor={`retenciones-${saleId}`}>
+              Retenciones federales (opcional)
+            </label>
+            <select
+              id={`retenciones-${saleId}`}
+              className="input"
+              multiple
+              size={Math.min(3, retenciones.length)}
+              value={retencionCodes}
+              onChange={(e) =>
+                setRetencionCodes(
+                  Array.from(e.target.selectedOptions, (option) => option.value),
+                )
+              }
+            >
+              {retenciones.map((rate) => (
+                <option key={rate.code} value={rate.code}>
+                  {rate.code} · {rate.scheme} {(Number.parseFloat(rate.rate) * 100).toFixed(2)}%
+                </option>
+              ))}
+            </select>
+            <p className="org-page__muted" style={{ margin: "var(--space-1) 0 0" }}>
+              Se aplican sobre el neto del documento y DESCIENDEN del total
+              (v0.11 · ADR-021). Ctrl/clic para agregar o quitar.
+            </p>
+          </div>
+        ) : null}
       </div>
       {error !== null ? (
         <p className="org-page__form-error" role="alert">{error.userMessage}</p>
@@ -646,33 +696,57 @@ function GlobalInvoiceCard({ legalEntityId, onDone }: { legalEntityId: string | 
   );
 }
 
-// ---- Invoice list row + cancellation ----
+// ---- Invoice list row + payment complement + cancellation ----
 
 function InvoiceRow({
   invoice,
   motiveList,
+  formasPago,
   onDone,
 }: {
   invoice: InvoiceView;
   motiveList: readonly CatalogItem[];
+  formasPago: readonly CatalogItem[];
   onDone: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const isPayment = invoice.kind === "PAYMENT";
+  const isIncome = invoice.kind === "INDIVIDUAL" || invoice.kind === "GLOBAL";
   const statusLabel =
     invoice.status === "STAMPED"
-      ? "TIMBRADA"
+      ? isPayment
+        ? "TIMBRADO"
+        : "TIMBRADA"
       : invoice.status === "CANCELED"
-        ? "CANCELADA"
+        ? "CANCELADO"
         : invoice.status;
   const statusTone = INVOICE_STATUS[invoice.status]?.tone ?? "neutral";
+  const hasOutstanding =
+    isIncome && invoice.status === "STAMPED" && invoice.outstanding !== null;
 
   return (
     <div className="org-page__product">
       <div style={{ display: "flex", alignItems: "baseline", gap: "var(--space-3)", flexWrap: "wrap" }}>
         <Badge tone={statusTone}>{statusLabel}</Badge>
         <strong>{invoice.folioLabel}</strong>
-        <span className="org-page__code">{invoice.kind}</span>
-        <span>{invoice.receptorRfc}</span>
+        <span className="org-page__code">
+          {isPayment ? "PAGO" : invoice.kind}
+        </span>
+        {isPayment ? (
+          <span className="org-page__muted">
+            ${money(invoice.paymentAmount ?? invoice.total)} ·{" "}
+            {invoice.paymentMethod ?? "?"} ·{" "}
+            {invoice.paymentDate !== null ? when(invoice.paymentDate) : ""}
+          </span>
+        ) : (
+          <span>{invoice.receptorRfc}</span>
+        )}
+        {hasOutstanding && invoice.outstanding !== "0.00" ? (
+          <span className="org-page__muted">Saldo: ${money(invoice.outstanding)}</span>
+        ) : null}
+        {hasOutstanding && invoice.outstanding === "0.00" ? (
+          <span className="org-page__form-success">Pagada</span>
+        ) : null}
         <span style={{ fontWeight: 600 }}>${money(invoice.total)}</span>
         <span className="org-page__muted">
           {invoice.periodYear !== null
@@ -680,34 +754,155 @@ function InvoiceRow({
             : ""}
           {when(invoice.createdAt)}
         </span>
-        {invoice.status === "STAMPED" ? (
+        {isIncome && invoice.status === "STAMPED" ? (
           <button
             type="button"
             className="btn btn--ghost btn--sm"
             aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
           >
-            {open ? "Cerrar" : "Cancelar"}
+            {open ? "Cerrar" : "Pago / cancelar"}
           </button>
         ) : null}
       </div>
       {invoice.status === "CANCELED" && invoice.cancelMotive !== null ? (
         <p className="org-page__muted" style={{ margin: 0 }}>
-          Cancelada con motivo SAT {invoice.cancelMotive}
+          Cancelado con motivo SAT {invoice.cancelMotive}
           {invoice.cancelNote !== null ? ` — ${invoice.cancelNote}` : ""}
         </p>
       ) : null}
       {open ? (
-        <CancelForm
-          invoiceId={invoice.id}
-          motiveList={motiveList}
-          onDone={() => {
-            setOpen(false);
-            onDone();
-          }}
-        />
+        <div style={{ display: "grid", gap: "var(--space-2)", marginTop: "var(--space-2)" }}>
+          {invoice.withholdings.length > 0 ? (
+            <p className="org-page__muted" style={{ margin: 0 }}>
+              Retenciones:{" "}
+              {invoice.withholdings
+                .map(
+                  (w) =>
+                    `${w.code} ${w.scheme} (${(Number.parseFloat(w.rate) * 100).toFixed(2)}%): $${money(w.amount)}`,
+                )
+                .join(" · ")}{" "}
+              — total retenido ${money(invoice.withholdingTotal)}
+            </p>
+          ) : null}
+          {hasOutstanding ? (
+            <PaymentForm
+              invoiceId={invoice.id}
+              outstanding={invoice.outstanding ?? "0.00"}
+              formasPago={formasPago}
+              onDone={() => {
+                setOpen(false);
+                onDone();
+              }}
+            />
+          ) : null}
+          <CancelForm
+            invoiceId={invoice.id}
+            motiveList={motiveList}
+            onDone={() => {
+              setOpen(false);
+              onDone();
+            }}
+          />
+        </div>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * Payment complement (v0.11 · ADR-021, CFDI tipo P): amount + SAT forma de
+ * pago against a STAMPED income CFDI. The balance is the guard — the backend
+ * answers 409 PAG_OVER_BALANCE on an amount above it.
+ */
+function PaymentForm({
+  invoiceId,
+  outstanding,
+  formasPago,
+  onDone,
+}: {
+  invoiceId: string;
+  outstanding: string;
+  formasPago: readonly CatalogItem[];
+  onDone: () => void;
+}) {
+  const [amount, setAmount] = useState(outstanding);
+  const [method, setMethod] = useState(
+    formasPago.some((item) => item.code === "03") ? "03" : (formasPago[0]?.code ?? ""),
+  );
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<ApiError | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const pago = await issuePaymentComplement({
+        invoiceId,
+        amount,
+        method,
+      });
+      setSuccess(
+        `Pago ${pago.folioLabel} TIMBRADO por $${money(pago.paymentAmount ?? amount)} (tipo P).`,
+      );
+      onDone();
+    } catch (cause) {
+      if (cause instanceof ApiError) setError(cause);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form onSubmit={submit} style={{ display: "grid", gap: "var(--space-3)" }}>
+      <p className="org-page__muted" style={{ margin: 0 }}>
+        Registrar pago (complemento tipo P) — saldo pendiente:{" "}
+        <strong>${money(outstanding)}</strong>
+      </p>
+      <div className="org-form-grid">
+        <div className="field">
+          <label className="field__label" htmlFor={`pag-amount-${invoiceId}`}>Monto *</label>
+          <input
+            id={`pag-amount-${invoiceId}`}
+            className="input"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            inputMode="decimal"
+            placeholder="0.00"
+            maxLength={14}
+            required
+          />
+        </div>
+        <div className="field">
+          <label className="field__label" htmlFor={`pag-method-${invoiceId}`}>Forma de pago SAT *</label>
+          <select
+            id={`pag-method-${invoiceId}`}
+            className="input"
+            value={method}
+            onChange={(e) => setMethod(e.target.value)}
+            required
+          >
+            {formasPago.map((item) => (
+              <option key={item.code} value={item.code}>
+                {item.code} — {item.description}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      {error !== null ? (
+        <p className="org-page__form-error" role="alert">{error.userMessage}</p>
+      ) : null}
+      {success !== null ? <p className="org-page__form-success">{success}</p> : null}
+      <div>
+        <button type="submit" className="btn btn--primary" disabled={busy}>
+          {busy ? "Timbrando pago…" : "Registrar pago"}
+        </button>
+      </div>
+    </form>
   );
 }
 

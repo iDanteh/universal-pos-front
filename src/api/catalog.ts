@@ -45,6 +45,8 @@ export interface VariantView {
   readonly price: string | null;
   /** Applied rate code (v0.8 · ADR-018); null/"" = sin impuesto. */
   readonly taxRateCode: string | null;
+  /** OPTIONAL IEPS slot (v0.11 · ADR-021); null/"" = sin IEPS. */
+  readonly iepsRateCode: string | null;
   readonly status: string;
 }
 
@@ -70,6 +72,8 @@ export interface VariantItemCommand {
   readonly price?: string;
   /** "" (or omitted) = sin impuesto. Validated against the global catalog. */
   readonly taxRateCode?: string;
+  /** "" (or omitted) = sin IEPS (v0.11 · ADR-021). */
+  readonly iepsRateCode?: string;
 }
 
 export interface CreateProductCommand {
@@ -96,6 +100,8 @@ export interface AddVariantCommand {
   readonly price?: string;
   /** "" (or omitted) = sin impuesto. Validated against the global catalog. */
   readonly taxRateCode?: string;
+  /** "" (or omitted) = sin IEPS (v0.11 · ADR-021). */
+  readonly iepsRateCode?: string;
 }
 
 export function addVariant(productId: string, command: AddVariantCommand): Promise<VariantView> {
@@ -119,4 +125,19 @@ export interface TaxRateView {
 
 export function catalogTaxes(): Promise<readonly TaxRateView[]> {
   return apiGet<readonly TaxRateView[]>("/api/v1/catalog/taxes", { headers: tenantHeaders() });
+}
+
+export interface WithholdingRateView {
+  readonly code: string;
+  readonly scheme: "ISR" | "IVA";
+  /** "0.100000"-style FRACTION (NUMERIC(10,6) end to end — never a float). */
+  readonly rate: string;
+  readonly description: string;
+}
+
+/** Federal retenciones (v0.11 · ADR-021): the invoice form's dropdown. */
+export function catalogWithholdings(): Promise<readonly WithholdingRateView[]> {
+  return apiGet<readonly WithholdingRateView[]>("/api/v1/catalog/withholdings", {
+    headers: tenantHeaders(),
+  });
 }

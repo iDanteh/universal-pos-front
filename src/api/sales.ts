@@ -25,7 +25,9 @@ export interface SaleLineView {
   readonly lineTotal: string;
   /** Snapshot rate code of the line (v0.8 · ADR-018); null = sin impuesto. */
   readonly taxRateCode: string | null;
+  readonly iepsRateCode: string | null;
   readonly taxTotal: string;
+  readonly iepsTotal: string;
 }
 
 export interface SalePaymentView {
@@ -116,7 +118,9 @@ export interface ReturnLineView {
   readonly discount: string;
   readonly lineTotal: string;
   readonly taxRateCode: string | null;
+  readonly iepsRateCode: string | null;
   readonly taxTotal: string;
+  readonly iepsTotal: string;
 }
 
 export interface ReturnView {

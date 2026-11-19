@@ -42,6 +42,7 @@ function VariantList({ units, attrs, taxes, product }: {
             {variant.unit} · ${formatPrice(variant.price)}
             {variant.barcode !== null ? ` · ${variant.barcode}` : ""}
             {rate !== undefined ? ` · ${rate.code} (${rate.scheme})` : ""}
+            {variant.iepsRateCode !== null && variant.iepsRateCode !== "" ? ` · IEPS ${variant.iepsRateCode}` : ""}
             {units === null || attrs.length === 0
               ? ""
               : Object.entries(variant.attributes ?? {})
@@ -66,6 +67,8 @@ interface VariantFormState {
   price: string;
   /** "" = sin impuesto (legacy-compatible). */
   taxRateCode: string;
+  /** "" = sin IEPS (v0.11 · ADR-021). */
+  iepsRateCode: string;
   attributes: Record<string, string>;
 }
 
@@ -145,6 +148,24 @@ function VariantFields({
           ))}
         </select>
       </div>
+      <div className="field">
+        <label className="field__label" htmlFor="var-ieps">IEPS (opcional)</label>
+        <select
+          id="var-ieps"
+          className="input"
+          value={form.iepsRateCode}
+          onChange={(e) => onForm({ ...form, iepsRateCode: e.target.value })}
+        >
+          <option value="">Sin IEPS</option>
+          {taxes
+            .filter((rate) => rate.scheme === "IEPS")
+            .map((rate) => (
+              <option key={rate.code} value={rate.code}>
+                {rate.code} · {rate.scheme} {rate.factor === "TASA" ? `${(Number.parseFloat(rate.rate) * 100).toFixed(1)}%` : "exento"}
+              </option>
+            ))}
+        </select>
+      </div>
       {units.productAttributes.map((attr) => (
         <div className="field" key={attr.code}>
           <label className="field__label" htmlFor={`attr-${attr.code}`}>
@@ -171,6 +192,7 @@ const emptyVariant: VariantFormState = {
   unit: "",
   price: "",
   taxRateCode: "",
+  iepsRateCode: "",
   attributes: {},
 };
 
@@ -237,6 +259,7 @@ export function CatalogPage() {
         barcode: variant.barcode,
         ...(variant.price === "" ? {} : { price: variant.price }),
         ...(variant.taxRateCode === "" ? {} : { taxRateCode: variant.taxRateCode }),
+        ...(variant.iepsRateCode === "" ? {} : { iepsRateCode: variant.iepsRateCode }),
         ...(attributesEntries.length === 0 ? {} : { attributes: Object.fromEntries(attributesEntries) }),
       };
       const command: CreateProductCommand = {
@@ -271,6 +294,7 @@ export function CatalogPage() {
         barcode: variantForm.barcode,
         ...(variantForm.price === "" ? {} : { price: variantForm.price }),
         ...(variantForm.taxRateCode === "" ? {} : { taxRateCode: variantForm.taxRateCode }),
+        ...(variantForm.iepsRateCode === "" ? {} : { iepsRateCode: variantForm.iepsRateCode }),
         ...(attributesEntries.length === 0 ? {} : { attributes: Object.fromEntries(attributesEntries) }),
       });
       setVariantTarget(null);
