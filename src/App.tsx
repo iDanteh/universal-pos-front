@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { AppLayout } from "@/components/site/AppLayout";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { ModulesPage } from "@/features/system/ModulesPage";
@@ -10,6 +10,7 @@ import { InventoryPage } from "@/features/inventory/InventoryPage";
 import { SalesPage } from "@/features/sales/SalesPage";
 import { InvoicingPage } from "@/features/invoicing/InvoicingPage";
 import { CashPage } from "@/features/cash/CashPage";
+import { UsersPage, AcceptInvitation } from "@/features/users/UsersPage";
 import { AuthProvider, useAuth } from "@/features/auth/AuthProvider";
 import { LoginPage } from "@/features/auth/LoginPage";
 
@@ -61,16 +62,7 @@ function ProtectedRoutes() {
         <Route path="/ventas" element={<SalesPage />} />
         <Route path="/caja" element={<CashPage />} />
         <Route path="/facturacion" element={<InvoicingPage />} />
-        <Route
-          path="/usuarios"
-          element={
-            <PlaceholderPage
-              title="Usuarios y accesos"
-              message="Gestión de usuarios, membresías, roles y permisos."
-              statusLabel="Planeado (v0.2+)"
-            />
-          }
-        />
+        <Route path="/usuarios" element={<UsersPage />} />
         <Route
           path="/suscripciones"
           element={
@@ -113,7 +105,28 @@ export default function App() {
   return (
     <AuthProvider>
       <ScrollToTop />
-      <ProtectedRoutes />
+      <Routes>
+        <Route
+          path="/aceptar-invitacion"
+          element={
+            <PublicInvitationRoute>
+              <AcceptInvitation token={new URLSearchParams(window.location.search).get("token") ?? ""} />
+            </PublicInvitationRoute>
+          }
+        />
+        <Route path="*" element={<ProtectedRoutes />} />
+      </Routes>
     </AuthProvider>
   );
+}
+
+/**
+ * PUBLIC route (fase 10 · ADR-020): consuming an invitation needs no
+ * session — the token IS the credential and carries its own tenant scope.
+ * Rendered OUTSIDE the auth shell so an invited person never sees login;
+ * matching it as its own top-level route keeps the protected tree (and its
+ * catch-all NotFound) from mounting underneath.
+ */
+function PublicInvitationRoute({ children }: { children: ReactNode }) {
+  return <>{children}</>;
 }

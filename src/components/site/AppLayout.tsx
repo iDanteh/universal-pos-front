@@ -8,6 +8,8 @@ interface NavItem {
   to: string;
   label: string;
   status?: "ready" | "planned";
+  /** v0.10: only shown when the ACTIVE tenant grants any of these codes. */
+  requires?: readonly string[];
 }
 
 interface NavGroup {
@@ -32,7 +34,7 @@ const NAV_GROUPS: readonly NavGroup[] = [
     label: "Administración",
     items: [
       { to: "/organizacion", label: "Organización", status: "ready" },
-      { to: "/usuarios", label: "Usuarios", status: "planned" },
+      { to: "/usuarios", label: "Usuarios", status: "ready", requires: ["users.manage", "roles.manage"] },
       { to: "/suscripciones", label: "Suscripciones", status: "planned" },
     ],
   },
@@ -83,7 +85,7 @@ const giroChips: Readonly<Record<string, string>> = {
 export function AppLayout() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();
-  const { user, organizationName, organizations, activeTenantId, logout, switchTenant } = useAuth();
+  const { user, organizationName, organizations, activeTenantId, logout, switchTenant, can } = useAuth();
   const profileRes = useApiResource<VerticalProfileView>(verticalProfile);
   const giro = profileRes.data?.code;
 
@@ -134,16 +136,24 @@ export function AppLayout() {
         <span>POS Platform</span>
       </button>
 
-      {NAV_GROUPS.map((group) => (
-        <nav className="sidebar__group" key={group.label} aria-label={group.label}>
-          <div className="sidebar__group-label">{group.label}</div>
-          {group.items.map((item) => (
-            <SidebarLink key={item.to} item={item} onClick={closeDrawer} />
-          ))}
-        </nav>
-      ))}
+      {NAV_GROUPS.map((group) => {
+        const items = group.items.filter(
+          (item) => item.requires === undefined || can(...item.requires),
+        );
+        if (items.length === 0) {
+          return null;
+        }
+        return (
+          <nav className="sidebar__group" key={group.label} aria-label={group.label}>
+            <div className="sidebar__group-label">{group.label}</div>
+            {items.map((item) => (
+              <SidebarLink key={item.to} item={item} onClick={closeDrawer} />
+            ))}
+          </nav>
+        );
+      })}
 
-      <div className="sidebar__footer">Foundation v0.9.0</div>
+      <div className="sidebar__footer">v0.11.0</div>
     </aside>
   );
 

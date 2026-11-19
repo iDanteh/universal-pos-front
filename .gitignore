@@ -1,3 +1,4 @@
 
 # ---- Build artifacts (higiene fase 10) ----
 dist/
+node_modules/

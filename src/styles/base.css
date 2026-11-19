@@ -500,6 +500,17 @@ select.input--method {
   border-color: var(--color-steel);
 }
 
+/* Destructive actions (v0.10 · revoke member / delete role). */
+.btn--danger {
+  background: transparent;
+  color: var(--color-danger);
+  border-color: var(--color-danger-border);
+}
+.btn--danger:hover:not(:disabled) {
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger);
+}
+
 .btn--sm {
   padding: 6px 16px;
   font-size: var(--text-caption);          /* compact control 12px */
@@ -1162,6 +1173,18 @@ select.input--method {
 .org-page__form-error {
   grid-column: 1 / -1;
   color: var(--color-danger);
+}
+
+/** Page-level success feedback (v0.10 · invitation/member/role actions). */
+.org-page__ok {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-success-bg);
+  border-radius: var(--radius-compact);
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  font-size: var(--text-caption);
+  letter-spacing: var(--tracking-caption);
 }
 
 .org-page__form-success {

@@ -47,7 +47,7 @@ export function LoginPage() {
           para operar tu organización en la plataforma.
         </p>
         <div className="auth-hero__meta">
-          <span>foundation v0.2.0</span>
+          <span>v0.10.0</span>
           <span>·</span>
           <span>sesiones revocables server-side</span>
         </div>
