@@ -10,6 +10,7 @@ import { InventoryPage } from "@/features/inventory/InventoryPage";
 import { SalesPage } from "@/features/sales/SalesPage";
 import { InvoicingPage } from "@/features/invoicing/InvoicingPage";
 import { CashPage } from "@/features/cash/CashPage";
+import { ReportsPage } from "@/features/reports/ReportsPage";
 import { UsersPage, AcceptInvitation } from "@/features/users/UsersPage";
 import { AuthProvider, useAuth } from "@/features/auth/AuthProvider";
 import { LoginPage } from "@/features/auth/LoginPage";
@@ -62,6 +63,7 @@ function ProtectedRoutes() {
         <Route path="/ventas" element={<SalesPage />} />
         <Route path="/caja" element={<CashPage />} />
         <Route path="/facturacion" element={<InvoicingPage />} />
+        <Route path="/reportes" element={<ReportsPage />} />
         <Route path="/usuarios" element={<UsersPage />} />
         <Route
           path="/suscripciones"

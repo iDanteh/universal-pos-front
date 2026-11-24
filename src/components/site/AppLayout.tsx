@@ -27,6 +27,7 @@ const NAV_GROUPS: readonly NavGroup[] = [
       { to: "/ventas", label: "Ventas", status: "ready" },
       { to: "/caja", label: "Caja", status: "ready" },
       { to: "/facturacion", label: "Facturación", status: "ready" },
+      { to: "/reportes", label: "Reportes", status: "ready", requires: ["sales.read"] },
       { to: "/modulos", label: "Módulos", status: "planned" },
     ],
   },
@@ -153,7 +154,7 @@ export function AppLayout() {
         );
       })}
 
-      <div className="sidebar__footer">v0.11.0</div>
+      <div className="sidebar__footer">v0.13.0</div>
     </aside>
   );
 

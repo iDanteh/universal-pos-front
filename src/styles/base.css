@@ -1249,3 +1249,210 @@ select.input--method {
 .topbar__switch option {
   font-weight: 400;
 }
+
+/* ============================================================
+   REPORTS + CORTE Z (fase 13 - ADR-023)
+   Read-only presentation: KPI strip, dense ledger tables and a
+   print-friendly Z cut. No shadows, no gradients.
+   ============================================================ */
+.report-tabs {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-5);
+}
+
+.report-tab {
+  font-family: var(--font-apple-text);
+  font-size: var(--text-small);
+  font-weight: 600;
+  color: var(--color-slate);
+  background: transparent;
+  border: 1px solid var(--color-outline);
+  border-radius: 999px;
+  padding: 8px 18px;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.report-tab:hover {
+  background: var(--color-paper-frost);
+}
+
+.report-tab--on {
+  color: var(--color-gallery-white);
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+}
+
+.report-stack {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.report-filters {
+  display: flex;
+  gap: var(--space-4);
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.report-filters .field {
+  min-width: 160px;
+}
+
+.report-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-3);
+}
+
+.report-kpi {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-4);
+  border: 1px solid var(--color-outline);
+  border-radius: var(--radius-compact);
+  background: var(--color-gallery-white);
+}
+
+.report-kpi__label {
+  font-size: var(--text-caption);
+  color: var(--color-slate-gray);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.report-kpi__value {
+  font-size: var(--text-body-lg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink);
+}
+
+.report-kpi[data-tone="success"] .report-kpi__value { color: var(--color-success); }
+.report-kpi[data-tone="danger"] .report-kpi__value { color: var(--color-danger); }
+.report-kpi[data-tone="muted"] .report-kpi__value { color: var(--color-slate); }
+
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: var(--space-5);
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.report-table th,
+.report-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-outline);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.report-table th {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--color-slate-gray);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.report-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.report-table .is-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.report-facts {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.report-facts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-outline);
+}
+
+.report-facts dt {
+  color: var(--color-slate);
+  font-size: var(--text-small);
+}
+
+.report-facts dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-total {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-hairline-silver);
+  font-variant-numeric: tabular-nums;
+}
+
+.z-print {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.z-print__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.z-print__kicker {
+  font-size: var(--text-caption);
+  color: var(--color-slate-gray);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.z-print__title {
+  margin: 2px 0 0;
+  font-size: var(--text-subheading);
+}
+
+/* ---- Print: only the Z cut leaves the sheet ---- */
+@media print {
+  .sidebar,
+  .topbar,
+  .sidebar-overlay,
+  .skip-link,
+  .no-print {
+    display: none !important;
+  }
+
+  .app-content {
+    padding: 0;
+    max-width: none;
+  }
+
+  .z-print .card {
+    border: 1px solid #ccc;
+    break-inside: avoid;
+  }
+
+  .report-table th,
+  .report-table td {
+    padding: 4px 6px;
+  }
+}
